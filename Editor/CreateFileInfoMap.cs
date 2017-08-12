@@ -12,10 +12,10 @@ public class CreateFileInfoMap
 {
     public static SearchOption searchScope = SearchOption.TopDirectoryOnly;
     public static string tryFindFile = "*.prefab";
-    public static string enumName = "UIPanelType";
-    public static string mapClassName = "UIPanelMapInfo";
-    public static string jsonName = "UIPanelMap.json";
-    public static string readPath = "Resources/";
+    public static string enumName = "_UIPanelType";
+    public static string mapClassName = "_UIPanelMapInfo";
+    public static string jsonName = "_UIPanelMap.json";
+    public static string readPath = "Resources";
     public static string outputEnumFilePath = "";
     public static string outputMapFilePath = "";
     public static string outputJsonFilePath = "";
@@ -29,10 +29,18 @@ public class CreateFileInfoMap
         string _outputJsonFilePath = string.Concat(Application.dataPath, "/", outputJsonFilePath);
         string _readPath = string.Concat(Application.dataPath + "/" + readPath);
 
-        if (!string.IsNullOrEmpty(readPath) && !Directory.Exists(_readPath))
+        if (!string.IsNullOrEmpty(readPath))
         {
-            state = "读取路径未找到!";
-            return;
+            if (!readPath.Contains("Resources"))
+            {
+                state = "请索引到 Resources 或 Resources以下文件夹!";
+                return;
+            }
+            if (!Directory.Exists(_readPath))
+            {
+                state = "读取路径未找到!";
+                return;
+            }
         }
         if (!string.IsNullOrEmpty(outputJsonFilePath) && !Directory.Exists(_outputJsonFilePath))
         {
@@ -47,6 +55,21 @@ public class CreateFileInfoMap
         if (!string.IsNullOrEmpty(outputEnumFilePath) && !Directory.Exists(_outputEnumFilePath))
         {
             state = "输出枚举路径未找到!";
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(enumName))
+        {
+            state = "枚举名不能为空!";
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(mapClassName))
+        {
+            state = "映射类名不能为空!";
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(jsonName))
+        {
+            state = "json名不能为空!";
             return;
         }
 
@@ -79,7 +102,6 @@ public class CreateFileInfoMap
             CodeMemberField field = new CodeMemberField(typeof(Enum), files[i].Name.Remove(files[i].Name.Length - 7, 7));
             customerclass.Members.Add(field);
             fileList.Add(files[i]);
-            //设置进度条  
             EditorUtility.DisplayProgressBar("File", state, (i * 1.0f) / files.Length);
         }
 
@@ -97,17 +119,18 @@ public class CreateFileInfoMap
 
         #region Json
 
-        //添加到dict
+        //储存字典信息
         Dictionary<int, string> dict = new Dictionary<int, string>();
+
         state = "正在添加映射关系中...";
         for (int i = 0; i < fileList.Count; i++)
         {
-            string str = fileList[i].FullName.Remove(0, Application.dataPath.Length + readPath.Length + 1);
-            dict.Add(i, str.Remove(str.Length - 7, 7));
+            string str = fileList[i].FullName.Remove(0, fileList[i].FullName.LastIndexOf("Resources/", StringComparison.CurrentCulture) + 10);
+            int prproj = str.LastIndexOf(".", StringComparison.CurrentCulture);
+            dict.Add(i, str.Remove(prproj, str.Length - prproj));
             EditorUtility.DisplayProgressBar("Map", state, (i * 1.0f) / fileList.Count);
         }
 
-        //转成json并保存出文件
         state = "正在保存json信息...";
         using (StreamWriter sw = new StreamWriter(string.Concat(_outputJsonFilePath, "/", jsonName), false))
         {
@@ -126,9 +149,7 @@ public class CreateFileInfoMap
 
     private static void CreateMapClass()
     {
-        //准备一个代码编译器单元
         CodeCompileUnit unit = new CodeCompileUnit();
-        //准备必要的命名空间（这个是指要生成的类的空间）
         CodeTypeDeclaration customerclass = CreateClassAttributes(unit, mapClassName, false);
 
         //添加字段
@@ -139,7 +160,6 @@ public class CreateFileInfoMap
         field2.Attributes = MemberAttributes.Public;
         customerclass.Members.Add(field2);
 
-        //生成代码
         CodeGenerator(unit, string.Concat(Application.dataPath, "/" + outputMapFilePath, "/", mapClassName));
 
     }
@@ -149,6 +169,7 @@ public class CreateFileInfoMap
         CodeNamespace sampleNamespace = new CodeNamespace();
         //导入必要的命名空间
         //sampleNamespace.Imports.Add(new CodeNamespaceImport("System"));
+        //准备要生成的类的定义
         CodeTypeDeclaration customerclass = new CodeTypeDeclaration(className);
         if (IsEnum)
             customerclass.IsEnum = true;
@@ -162,7 +183,6 @@ public class CreateFileInfoMap
 
     private static void CodeGenerator(CodeCompileUnit unit, string outPath)
     {
-        //生成代码
         CodeDomProvider provider = CodeDomProvider.CreateProvider("CSharp");
 
         using (StreamWriter sw = new StreamWriter(string.Concat(outPath, ".cs"), false))

@@ -20,12 +20,13 @@ public class CreateWindows : EditorWindow
     {
         GUILayout.BeginVertical();
 
-        GUILayout.Space(10);
+        GUILayout.Space(15);
         GUI.skin.label.fontSize = 24;
         GUI.skin.label.alignment = TextAnchor.MiddleCenter;
         GUILayout.Label("导出文件位置映射关系Json");
 
-        GUILayout.Space(10);
+        GUILayout.Space(15);
+        EditorGUILayout.LabelField(" * 请索引到 Resources 或 Resources以下文件夹!");
         CreateFileInfoMap.readPath = EditorGUILayout.TextField("读取路径:", CreateFileInfoMap.readPath);
         GUILayout.Space(5);
         CreateFileInfoMap.tryFindFile = EditorGUILayout.TextField("查找文件:", CreateFileInfoMap.tryFindFile);
@@ -44,7 +45,6 @@ public class CreateWindows : EditorWindow
 
         GUILayout.Space(15);
         EditorGUILayout.LabelField(" * 读取使用 Dictionary<enum,string> 接收");
-        GUILayout.Space(5);
         CreateFileInfoMap.jsonName = EditorGUILayout.TextField("创建Json文件名:", CreateFileInfoMap.jsonName);
         GUILayout.Space(5);
         CreateFileInfoMap.outputJsonFilePath = EditorGUILayout.TextField("创建映Json文件在:", CreateFileInfoMap.outputJsonFilePath);
